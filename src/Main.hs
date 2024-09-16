@@ -198,22 +198,25 @@ process = putStrLn
 
 repl :: Repl ()
 repl = do
-  minput <- getInputLine "|> "
+  minput <- getInputLine ">> "
   case minput of
     Nothing -> outputStrLn "Goodbye."
     Just input -> do 
        -- (liftIO $ process input) 
        liftIO $ writeFileListAppend "/tmp/x5.x" [input]
-       liftIO  $ do 
-                 if | hasPrefix ":ho" $ trim input  -> do
-                         s2 <- run $ "ho " ++ (drop 3 $ input)
-                         let cx = shellHighlight2 $ unlines s2
-                         mapM_ putStrLn cx 
-                    | otherwise -> do 
-                         s1 <- run $ "gd.sh '"  ++ input ++ "'"
-                         mapM_ putStrLn s1
+       do 
+         if | hasPrefix ":ho" $ trim input  -> do
+                 s2 <- liftIO $ run $ "ho " ++ (drop 3 $ input)
+                 let cx = shellHighlight2 $ unlines s2
+                 liftIO $ mapM_ putStrLn cx 
+                 repl
+            | hasPrefix ":q" $ trim input  -> do
+                 liftIO $ putStrLn "Done"
+            | otherwise -> do 
+                 s1 <- liftIO $ run $ "gd.sh '"  ++ input ++ "'"
+                 liftIO $ mapM_ putStrLn s1
+                 repl
                               
-       repl
 
 main :: IO ()
 main = runInputT defaultSettings repl
